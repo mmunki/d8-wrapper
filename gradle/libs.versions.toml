@@ -1,0 +1,13 @@
+[versions]
+# The D8 dexer and the R8 shrinker in one artifact.  This is the only
+# runtime dependency of the wrapper, it is what makes the fat JAR big.
+r8 = "9.5.28"
+junit = "5.11.4"
+
+[libraries]
+r8 = { module = "com.android.tools:r8", version.ref = "r8" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version = "9.6.1" }
