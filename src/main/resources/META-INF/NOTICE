@@ -1,0 +1,7 @@
+d8-wrapper
+Copyright (c) 2026 mmunki
+
+This product includes the D8/R8 dexer from the Android Open Source Project.
+The dexer is licensed under the Apache License, Version 2.0 and the
+BSD 3-Clause License.  The complete third-party license text is bundled in
+META-INF/licenses/r8/LICENSE.
