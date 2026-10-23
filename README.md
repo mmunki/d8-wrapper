@@ -1,22 +1,40 @@
 # d8-wrapper
 
-A production ready wrapper around the **D8 dexer**, the dexer of the Android build tools.
+A production-ready Java wrapper around the **D8 dexer**, the dexer of the
+Android build tools.
 
-The wrapper turns the command line of the dexer into a small, validated and stable interface,
-collects the DEX files that were written and reports the checksum of every one of them. The
-result is a single runnable JAR that holds the wrapper and the dexer, there is nothing to
-install and nothing to download besides the JAR itself.
+The wrapper turns the command line of the dexer into a small, validated and
+stable interface, collects the DEX files that were written and reports the
+SHA-256 checksum of every one of them.
 
-```
+## Artifacts
+
+| Artifact | Contents | Use it when |
+| --- | --- | --- |
+| `d8-wrapper.jar` | the wrapper only, **no D8 classes** | you already have `d8.jar` |
+| `d8.jar` | the D8 dexer (`com.android.tools:r8`) | you use `d8-wrapper.jar` |
+| `d8-wrapper-all.jar` | the wrapper and D8 in one JAR | you want a single file |
+
+`d8-wrapper.jar` declares `Class-Path: d8.jar` in its manifest.  Put the two
+files in the same directory and run:
+
+```bash
 java -jar d8-wrapper.jar --min-api 21 --output out build/classes
+```
+
+Or use the self-contained JAR:
+
+```bash
+java -jar d8-wrapper-all.jar --min-api 21 --output out build/classes
 ```
 
 ## What it does
 
-- validates the command line before anything is compiled, every message names the option that
-  caused it
+- validates the command line before anything is compiled; every message names
+  the option that caused it
 - compiles class files, JAR files and archives into DEX files
-- collects the DEX files of the output directory and computes the SHA-256 checksum of each one
+- collects the DEX files of the output directory and computes the SHA-256
+  checksum of each one
 - returns an exit code that says what happened, the codes are listed below
 
 ## Usage
@@ -37,8 +55,7 @@ options:
   --lib <path>               add a library input, can be used more than once
   --classpath <path>         add a compile time classpath entry, can be used more than once
   --main-dex-list <file>     the file that lists the classes of the primary DEX file
-  --main-dex-rules <file>    the ProGuard rules that select the classes of the primary DEX
-                             file
+  --main-dex-rules <file>    the ProGuard rules that select the classes of the primary DEX file
   --main-dex-list-output <file>
                              the file the resulting main dex list is written to
   --pg-map <file>            the mapping file of a distribution build
@@ -49,8 +66,9 @@ options:
   --version                  print the versions of the wrapper and the dexer
 ```
 
-An option is written as `--name` or `--name=value`, an option that needs a value can also be
-written as `--name value`. Everything after `--` is an input.
+An option is written as `--name` or `--name=value`; an option that needs a
+value can also be written as `--name value`.  Everything after `--` is an
+input.
 
 ### Exit codes
 
@@ -62,42 +80,45 @@ written as `--name value`. Everything after `--` is an input.
 | 4 | the dexer refused to compile the inputs |
 | 70 | the wrapper hit a failure it does not know about |
 
-## The architecture
+## Architecture
 
-The wrapper is layered, every layer only knows the layer below it.
+The wrapper is layered; every layer only knows the layer below it.
 
-| Package | What it holds |
+| Package | Responsibility |
 | --- | --- |
-| `com.mmunki.d8wrapper.cli` | the entry point, the parser of the command line and the usage |
-| `com.mmunki.d8wrapper.config` | the configuration and the dependency injection |
-| `com.mmunki.d8wrapper.model` | the immutable data classes, the records and the enums |
-| `com.mmunki.d8wrapper.repository` | the access to the inputs and to the artifacts |
-| `com.mmunki.d8wrapper.service` | the business logic, the compiler and the validator |
-| `com.mmunki.d8wrapper.exception` | the exceptions of the wrapper |
+| `tw.mmunki.d8wrapper.cli` | entry point, command-line parser and usage |
+| `tw.mmunki.d8wrapper.config` | configuration and dependency injection |
+| `tw.mmunki.d8wrapper.model` | immutable records, enums and the sealed report |
+| `tw.mmunki.d8wrapper.repository` | access to inputs and generated artifacts |
+| `tw.mmunki.d8wrapper.service` | compilation, validation and diagnostics |
+| `tw.mmunki.d8wrapper.exception` | checked domain exceptions |
 
 The code follows the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html),
-uses Java 17 and keeps every class small and focused. The interfaces are the boundaries, the
-compiler is programmed against the interface of the compiler and not against the dexer.
+uses Java 17 and keeps every class small and focused.  The interfaces are the
+boundaries; the compiler is programmed against `DexCompiler`, not against D8.
 
 ```
-src/main/java/com/mmunki/d8wrapper
+src/main/java/tw/mmunki/d8wrapper
 ├── cli
 │   ├── CliArguments.java
 │   ├── CommandLineParser.java
 │   ├── ExitCode.java
 │   ├── Main.java
 │   ├── RequestBuilder.java
-│   └── UsagePrinter.java
+│   ├── UsagePrinter.java
+│   └── package-info.java
 ├── config
 │   ├── ConfigLoader.java
 │   ├── ServiceRegistry.java
 │   ├── SystemPropertyConfigLoader.java
-│   └── WrapperConfig.java
+│   ├── WrapperConfig.java
+│   └── package-info.java
 ├── exception
 │   ├── CompilationFailedException.java
 │   ├── InputValidationException.java
 │   ├── InvalidOptionException.java
-│   └── WrapperException.java
+│   ├── WrapperException.java
+│   └── package-info.java
 ├── model
 │   ├── CompilationReport.java
 │   ├── DexArtifact.java
@@ -106,48 +127,57 @@ src/main/java/com/mmunki/d8wrapper
 │   ├── FailureReport.java
 │   ├── LogLevel.java
 │   ├── MinSdkLevel.java
-│   └── SuccessReport.java
+│   ├── SuccessReport.java
+│   └── package-info.java
 ├── repository
 │   ├── ArtifactRepository.java
 │   ├── FileSystemArtifactRepository.java
 │   ├── FileSystemInputRepository.java
-│   └── InputRepository.java
+│   ├── InputRepository.java
+│   └── package-info.java
 └── service
     ├── ArgumentTranslator.java
     ├── D8DexCompiler.java
     ├── DexCompiler.java
     ├── DiagnosticsCollector.java
-    └── RequestValidator.java
+    ├── RequestValidator.java
+    └── package-info.java
 ```
 
-## The build
+The JAR also contains `META-INF/LICENSE` (MIT), `META-INF/NOTICE` and the
+third-party licence of D8/R8 under `META-INF/licenses/r8/LICENSE`.
 
-The build is a Gradle build, it produces the fat JAR with the
+## Build
+
+The build is a Gradle build using the
 [shadow plugin](https://github.com/gradleup/shadow).
 
 ```bash
-./gradlew clean build          # compiles, tests and builds the JAR
-./gradlew shadowJar            # builds build/libs/d8-wrapper.jar
-./gradlew test                 # runs the tests
+./gradlew clean build   # compiles, tests and builds every artifact
+./gradlew test          # runs the tests
+./gradlew jar           # builds build/libs/d8-wrapper.jar (thin)
+./gradlew shadowJar     # builds build/libs/d8-wrapper-all.jar (self-contained)
+./gradlew d8Jar         # copies the dexer to build/dexer/d8.jar
 ```
 
-The JAR holds the classes of the wrapper and the dexer, it is the only file that has to be
-copied around. The dexer is the `com.android.tools:r8` artifact, it comes from the Google
-Maven repository.
+The build needs JDK 17 or newer; the toolchain is declared in
+`build.gradle.kts`.  Archives are reproducible (stable order, no timestamps).
 
-The build needs a JDK 17 or newer, the toolchain is declared in `build.gradle.kts`.
+## Releases
 
-## The releases
-
-The releases of this repository hold the JAR as an asset, the SHA-256 of the asset is in the
-notes of the release:
+The releases hold the artifacts as assets; the SHA-256 of every asset is in
+the release notes:
 
 ```bash
-gh release download v1.0.0 --repo mmunki/d8-wrapper --pattern 'd8-wrapper.jar'
+gh release download v1.1.0 --repo mmunki/d8-wrapper --pattern 'd8-wrapper.jar'
 sha256sum d8-wrapper.jar
 ```
 
-## The licence
+## Licence
 
-The wrapper is under the Apache License 2.0, the dexer that it carries is under the
-Apache License 2.0 and the BSD 3-Clause License, both of Google.
+The wrapper is released under the MIT License; see `LICENSE`.
+
+The D8 dexer that is shipped as `d8.jar` and inside `d8-wrapper-all.jar` is
+part of the Android Open Source Project and is licensed under the Apache
+License 2.0 and the BSD 3-Clause License.  Its complete licence text is in
+`META-INF/licenses/r8/LICENSE`.
